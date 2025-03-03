@@ -270,7 +270,10 @@ public class VideoActivity extends BaseActivity implements CustomKeyDownVod.List
     @Override
     protected void initView() {
         mFrameParams = mBinding.video.getLayoutParams();
-        mClock = Clock.create(mBinding.widget.clock);
+        mClock = Clock.create(Arrays.asList(mBinding.widget.clock, mBinding.display.clock));
+        TextView titleTextView = mBinding.display.titleLayout.findViewById(R.id.title);
+        titleTextView.setSelected(true);
+        titleTextView.setHorizontallyScrolling(true);
         mKeyDown = CustomKeyDownVod.create(this);
         mObserveDetail = this::setDetail;
         mObservePlayer = this::setPlayer;
@@ -284,6 +287,7 @@ public class VideoActivity extends BaseActivity implements CustomKeyDownVod.List
         setRecyclerView();
         setVideoView();
         setViewModel();
+        setDisplayView();
         checkCast();
         checkId();
     }
@@ -378,6 +382,11 @@ public class VideoActivity extends BaseActivity implements CustomKeyDownVod.List
         mBinding.control.decode.setText(mPlayers.getDecodeText());
         mBinding.control.danmaku.setVisibility(Setting.isDanmakuLoad() ? View.VISIBLE : View.GONE);
         mBinding.control.reset.setText(ResUtil.getStringArray(R.array.select_reset)[Setting.getReset()]);
+    }
+
+     private void setDisplayView() {
+        mBinding.display.getRoot().setVisibility(View.VISIBLE);
+        showDisplayInfo();
     }
 
     private void setDecode() {
@@ -514,6 +523,8 @@ public class VideoActivity extends BaseActivity implements CustomKeyDownVod.List
 
     private void getPlayer(Flag flag, Episode episode, boolean replay) {
         mBinding.widget.title.setText(getString(R.string.detail_title, mBinding.name.getText(), episode.getName()));
+        mBinding.display.title.setText(mBinding.widget.title.getText());
+        mViewModel.playerContent(getKey(), flag.getFlag(), episode.getUrl());
         mViewModel.playerContent(getKey(), flag.getFlag(), episode.getUrl());
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         mBinding.widget.title.setSelected(true);
@@ -627,6 +638,22 @@ public class VideoActivity extends BaseActivity implements CustomKeyDownVod.List
         notifyItemChanged(mBinding.flag, mFlagAdapter);
     }
 
+    private void showDisplayInfo() {
+        mBinding.display.clock.setVisibility(Setting.isDisplayTime() || isVisible(mBinding.widget.info)  ? View.VISIBLE : View.GONE);
+        mBinding.display.netspeed.setVisibility(Setting.isDisplaySpeed() && !isVisible(mBinding.widget.info) && !isVisible(mBinding.control.getRoot()) && isFullscreen() || (isVisible(mBinding.widget.info) && !isVisible(mBinding.control.getRoot())) ? View.VISIBLE : View.GONE);
+        mBinding.display.duration.setVisibility(Setting.isDisplayDuration() && !isVisible(mBinding.widget.info) && !isVisible(mBinding.control.getRoot()) && isFullscreen() || (isVisible(mBinding.widget.info) && !isVisible(mBinding.control.getRoot())) ? View.VISIBLE : View.GONE);
+        mBinding.display.progress.setVisibility(Setting.isDisplayMiniProgress() && !isVisible(mBinding.widget.info) && !isVisible(mBinding.control.getRoot()) && (mPlayers.isVod()) && isFullscreen() || (isVisible(mBinding.widget.info) && !isVisible(mBinding.control.getRoot())) ? View.VISIBLE : View.GONE);
+        mBinding.display.titleLayout.setVisibility(Setting.isDisplayVideoTitle() && !isVisible(mBinding.widget.info) && !isVisible(mBinding.control.getRoot()) && isFullscreen() || (!isVisible(mBinding.widget.info) && isVisible(mBinding.control.getRoot())) ? View.VISIBLE : View.GONE);
+    }
+    private void onTimeChangeDisplaySpeed() {
+        boolean visible = !isVisible(mBinding.control.getRoot());
+        long position = mPlayers.getPosition();
+        if (Setting.isDisplaySpeed() && visible) Traffic.setSpeed(mBinding.display.netspeed);
+        if (Setting.isDisplayDuration() && visible && position > 0) mBinding.display.duration.setText(mPlayers.getPositionTime(0) + "/" + mPlayers.getDurationTime());
+        if (Setting.isDisplayMiniProgress() && visible && position > 0 && (mPlayers.isVod())) mBinding.display.progress.setProgress((int)(position * 100 / mPlayers.getDuration()));
+        showDisplayInfo();
+    }
+
     @Override
     public void onRevSort() {
         mHistory.setRevSort(!mHistory.isRevSort());
@@ -656,6 +683,7 @@ public class VideoActivity extends BaseActivity implements CustomKeyDownVod.List
         mKeyDown.setFull(true);
         setFullscreen(true);
         mFocus2 = null;
+        onPlay();
     }
 
     private void exitFullscreen() {
@@ -1016,6 +1044,7 @@ public class VideoActivity extends BaseActivity implements CustomKeyDownVod.List
 
     @Override
     public void onTimeChanged() {
+        onTimeChangeDisplaySpeed();
         long position, duration;
         mHistory.setPosition(position = mPlayers.getPosition());
         mHistory.setDuration(duration = mPlayers.getDuration());
@@ -1074,6 +1103,7 @@ public class VideoActivity extends BaseActivity implements CustomKeyDownVod.List
                 break;
             case PlayerEvent.SIZE:
                 mBinding.widget.size.setText(mPlayers.getSizeText());
+                mBinding.display.size.setText(mPlayers.getSizeText());
                 break;
         }
     }

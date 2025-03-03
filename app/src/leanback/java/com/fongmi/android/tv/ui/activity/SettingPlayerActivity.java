@@ -18,6 +18,7 @@ import com.fongmi.android.tv.ui.dialog.BufferDialog;
 import com.fongmi.android.tv.ui.dialog.SpeedDialog;
 import com.fongmi.android.tv.ui.dialog.UaDialog;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.ui.dialog.DisplayDialog;
 
 import java.text.DecimalFormat;
 
@@ -75,11 +76,16 @@ public class SettingPlayerActivity extends BaseActivity implements UaCallback, B
         mBinding.background.setOnClickListener(this::onBackground);
         mBinding.audioDecode.setOnClickListener(this::setAudioDecode);
         mBinding.danmakuLoad.setOnClickListener(this::setDanmakuLoad);
+        mBinding.display.setOnClickListener(this::onDisplay);
     }
 
     private void setVisible() {
         if (Setting.getBackground() == 2) Setting.putBackground(1);
         mBinding.caption.setVisibility(Setting.hasCaption() ? View.VISIBLE : View.GONE);
+    }
+
+    private void onDisplay(View view) {
+        DisplayDialog.create(this).show();
     }
 
     private void onUa(View view) {
